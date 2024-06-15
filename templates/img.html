@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Select Image</title>
+<style>
+  /* Style for custom select options */
+  #imageSelect {
+    width: 200px;
+    padding: 10px;
+  }
+
+  #imageSelect option {
+    background-repeat: no-repeat;
+    background-size: contain;
+    padding-left: 25px;
+  }
+</style>
+</head>
+<body>
+  <select id="imageSelect" onchange="handleImageChange()">
+    <option value="" data-image="/uploads/PREM1534_1.jpg">Image 1</option>
+    <option value="" data-image="https://via.placeholder.com/200">Image 2</option>
+    <option value="" data-image="https://via.placeholder.com/250">Image 3</option>
+    <!-- Add more options as needed -->
+  </select>
+  <br><br>
+  <div id="imagePreview"></div>
+  <script>
+    function handleImageChange() {
+      const selectElement = document.getElementById('imageSelect');
+      const selectedOption = selectElement.options[selectElement.selectedIndex];
+      const selectedImageUrl = selectedOption.dataset.image;
+      const imagePreview = document.getElementById('imagePreview');
+
+      if (selectedImageUrl) {
+        const imageElement = document.createElement('img');
+        imageElement.src = selectedImageUrl;
+        imageElement.alt = 'Selected Image';
+        imageElement.style.maxWidth = '300px';
+        imagePreview.innerHTML = ''; // Clear previous preview
+        imagePreview.appendChild(imageElement);
+        console.log('Selected image:', selectedImageUrl);
+        // You can perform further actions with the selected image URL here
+      } else {
+        imagePreview.innerHTML = ''; // Clear preview if no image selected
+        console.log('No image selected');
+      }
+    }
+  </script>
+</body>
+</html>

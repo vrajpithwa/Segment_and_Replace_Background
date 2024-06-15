@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Segmentation</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
+      }
+      .container {
+        max-width: 850px;
+        /* background-color: #fff;
+     */
+        margin-top: 50px;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(30, 30, 30, 0.526);
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #007bff;
+      }
+      .form-control-file {
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        width: 400px;
+      }
+      .form-control-file:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
+      .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        padding: 10px 20px;
+        font-weight: 500;
+      }
+      .gen-bg-div {
+        display: none;
+
+      }
+      #select-person {
+        display: none;
+      }
+
+      .div-image {
+        margin-top: 20px;
+        max-width: 100%;
+      }
+      /* Added this style to set the maximum width of the image to 50% of the container's width */
+      .div-image img {
+        max-width: 70%;
+        height: auto;
+      }
+      .loading-spinner {
+        display: none;
+      }
+      .radio-btn{
+        margin-right: 10px;
+      }
+      .popup {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    
+}
+
+.popup-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 30%;
+    border-radius: 10px;
+        box-shadow: 0 0 20px rgba(30, 30, 30, 0.526);
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+    </style>
+  </head>
+
+  <body>
+    <div id="popup" class="popup">
+      <div class="popup-content">
+          <span class="close-button">&times;</span>
+          <b style="color: red;"> Disclaimer:</b>
+          <p>Please make sure you have active internet connection for generating background!</p>
+      </div>
+  </div>
+    <div class="container">
+      <h1 class="mt-5">Segment and Change Background</h1>
+      <form
+        id="person_select_form"
+        action="/select_person"
+        method="POST"
+        enctype="multipart/form-data"
+        class="mt-3"
+      >
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="file">Upload Image for Segmentation:</label>
+              <input
+                type="file"
+                class="form-control-file"
+                name="file"
+                id="file"
+                accept="image/*"
+                required
+              />
+             
+              <br><br>
+              <div id="imagePreview"></div>  
+  <div class="div-image" id="preview"></div>
+            </div>
+          </div>
+          <div>
+            <label for="background"
+              ><input
+              class="radio-btn"
+                type="radio"
+                id="background-radio"
+                name="bg"
+                value="upload_bg_image"
+                checked
+              />
+              Upload Background Image:</label
+            >
+            <div class="bg-div col-md-6">
+              <div class="form-group">
+                <input
+                  type="file"
+                  class="form-control-file"
+                  name="background"
+                  id="background"
+                  accept="image/*"
+                />
+                <div class="div-image" id="preview2"></div>
+              </div>
+            </div>
+          </div>
+          <br><br><br>
+          <div>
+           <input
+                type="radio"
+                id="gen_background"
+                name="bg"
+                value="generate_bg_image"
+              />
+              <label for="gen_background"
+              > Generate Background</label
+            >
+            <div class="gen-bg-div col-md-6">
+              <div class="form-group">
+                <input
+                  type="text"
+                  class="form-control-file"
+                  name="gen_background"
+                  id="gen_background_inp"
+                />
+                <div class="div-image" id="preview1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <br /><br />
+        <button type="submit" class="btn btn-primary">Upload</button>
+        <div class="spinner-border text-primary loading-spinner" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </form>
+      <div class="div-image" id="det_img"></div>
+
+      <form id="upload" action="/upload" method="POST">
+        <div id="select-person">
+          Select Person as per the image given, higher accuracy to lower is 0 to
+          n.<br />
+          For multiple persons enter comma seperated.
+          <input
+            id="index"
+            type="text"
+            name="index"
+            placeholder="Enter number"
+          />
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+
+      <div class="div-image" id="result"></div>
+     
+      <!-- Display detected objects here -->
+    </div>
+
+    <script>
+      // var isImageLoaded = false
+      // var select_person = document.getElementsByClassName('select-person')
+      // if(isImageLoaded){
+      //     select_person.style.display = 'block'
+      // }else{
+      //     select_person.style.display = 'none'
+      // }
+
+
+      function handleImageChange() {
+      const selectElement = document.getElementById('imageSelect');
+      const selectedOption = selectElement.options[selectElement.selectedIndex];
+      const selectedImageUrl = selectedOption.dataset.image;
+      const imagePreview = document.getElementById('imagePreview');
+
+      if (selectedImageUrl) {
+        const imageElement = document.createElement('img');
+        imageElement.src = selectedImageUrl;
+        imageElement.alt = 'Selected Image';
+        imageElement.style.maxWidth = '300px';
+        imagePreview.innerHTML = ''; // Clear previous preview
+        imagePreview.appendChild(imageElement);
+        console.log('Selected image:', selectedImageUrl);
+        // You can perform further actions with the selected image URL here
+      } else {
+        imagePreview.innerHTML = ''; // Clear preview if no image selected
+        console.log('No image selected');
+      }
+    }
+
+      const uploadBgRadio = document.getElementById("background-radio");
+      const genBgRadio = document.getElementById("gen_background");
+      const bgDiv = document.querySelector(".bg-div");
+      const genBgDiv = document.querySelector(".gen-bg-div");
+
+      uploadBgRadio.addEventListener("change", () => {
+        if (uploadBgRadio.checked) {
+          bgDiv.style.display = "block";
+          genBgDiv.style.display = "none";
+        }
+      });
+
+      genBgRadio.addEventListener("change", () => {
+        if (genBgRadio.checked) {
+          genBgDiv.style.display = "block";
+          bgDiv.style.display = "none";
+        }
+      });
+
+      document.querySelector("#file").addEventListener("change", (e) => {
+        const fileInput = e.target;
+        const files = fileInput.files;
+        if (files.length > 0) {
+          const file = files[0];
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const preview = document.querySelector("#preview");
+            preview.innerHTML = `<img src="${e.target.result}" alt="Image Preview" class="img-fluid">`;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      var slct_per = {};
+
+      document.querySelector("#background").addEventListener("change", (e) => {
+        const fileInput = e.target;
+        const files = fileInput.files;
+        if (files.length > 0) {
+          const file = files[0];
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const preview = document.querySelector("#preview1");
+            preview.innerHTML = `<img src="${e.target.result}" alt="Image Preview" class="img-fluid">`;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      document
+        .getElementById("person_select_form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          console.log("inside person select form");
+          const formData = new FormData();
+          const fileInput = document.querySelector("#file");
+          const backgroundInput = document.querySelector("#background");
+          var genBg = false;
+          const text_of_gen_bg =
+            document.getElementById("gen_background_inp").value;
+          if (genBgRadio.checked) {
+            genBg = true;
+            console.log("text_of_gen_bg");
+            console.log(text_of_gen_bg);
+            formData.append("background", `${text_of_gen_bg}`);
+          } else {
+            console.log("paaaaaatttthhhhhhhhhhhhh");
+            console.log(backgroundInput.files[0]);
+            formData.append("background", backgroundInput.files[0]);
+          }
+          formData.append("genBg", genBg);
+          console.log(genBg);
+          formData.append("file", fileInput.files[0]);
+
+          // Show loading spinner
+          document.querySelector(".loading-spinner").style.display =
+            "inline-block";
+          await fetch("/select_person", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              slct_per = data;
+              console.log(slct_per);
+              document.getElementById("select-person").style.display = "block";
+            });
+
+          isImageLoaded = true;
+          // const resultPath = await response.text();
+          const detected_image = document.createElement("img");
+
+          // resultImg.src = '/uploads/processed_image.jpg';
+          detected_image.src = "/uploads/detected_image.jpg";
+
+          // Set fixed width
+
+          // Hide loading spinner
+          document.querySelector(".loading-spinner").style.display = "none";
+
+          document.getElementById("det_img").innerHTML = "";
+          document.getElementById("det_img").appendChild(detected_image);
+        });
+      document
+        .getElementById("upload")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          console.log("inside upload form");
+          const formData = new FormData();
+          // const fileInput = document.querySelector('#file');
+          // const backgroundInput = document.querySelector('#background');
+          // formData.append('file', fileInput.files[0]);
+          // formData.append('background', backgroundInput.files[0]);
+          const selected_person_indices =
+            document.getElementById("index").value;
+          console.log("selected_person_indices");
+          console.log(selected_person_indices);
+          formData.append("selected_indices", selected_person_indices);
+          formData.append("det_img", slct_per["det_img"]);
+          formData.append("file_path", slct_per["file_path"]);
+          formData.append("background_path", slct_per["background_path"]);
+
+          // Show loading spinner
+          document.querySelector(".loading-spinner").style.display =
+            "inline-block";
+          e.preventDefault();
+
+          await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+          // isImageLoaded = true
+          // const resultPath = await response.text();
+          const resultImg = document.createElement("img");
+
+          resultImg.src = "/uploads/processed_image.jpg";
+          // detected_image.src = '/uploads/detected_image.jpg';
+
+          // Set fixed width
+
+          // Hide loading spinner
+          document.querySelector(".loading-spinner").style.display = "none";
+
+          document.getElementById("result").innerHTML = "";
+          document.getElementById("result").appendChild(resultImg);
+        });
+
+        window.onload = function() {
+    var popup = document.getElementById("popup");
+    var closeButton = document.getElementsByClassName("close-button")[0];
+
+    // Show the popup when the page loads
+    popup.style.display = "block";
+
+    // Close the popup when the close button is clicked
+    closeButton.onclick = function() {
+        popup.style.display = "none";
+    }
+
+    // Close the popup when the user clicks outside the popup content
+    window.onclick = function(event) {
+        if (event.target == popup) {
+            popup.style.display = "none";
+        }
+    }
+}
+    </script>
+  </body>
+</html>

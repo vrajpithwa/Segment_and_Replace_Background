@@ -1,3 +1,5 @@
+# !wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+# sam model download link
 
 from flask import Flask, render_template, request, jsonify
 import os
@@ -25,7 +27,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 UPLOAD_FOLDER = './uploads'  # Setting the upload folder path
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER  # Configuring the upload folder in Flask app
 
-@app.route('/segment')  # Defining a route for the homepage
+@app.route('/')  # Defining a route for the homepage
 @cross_origin()
 
 def index():
